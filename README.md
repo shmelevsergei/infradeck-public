@@ -1,84 +1,87 @@
 # InfraDeck
 
-Первая бета: обычный SSH/Sentinel доступен; автоматические S3-бэкапы и ротация
-SSH-ключей выключены по умолчанию. Явное включение для тестовых целей описано в
-[эксплуатации](docs/operations.md#beta-experimental-operations).
+[English](README.md) ? [???????](README.ru.md) ? [Documentation](docs/README.md) ? [License](LICENSE) ? [Contributing](CONTRIBUTING.md) ? [Security](SECURITY.md)
 
-[English](README.en.md) · [Документация](docs/README.md) · [Лицензия](LICENSE) · [Участие](CONTRIBUTING.md) · [Безопасность](SECURITY.md)
+Self-hosted infrastructure inventory, project costs, reports and monitoring. Your servers, your data. Licensed under AGPL-3.0-only; no vendor cloud is required.
 
-**0.5.0-beta.1 — кандидат первой беты.** [Состав и результаты приёмки](docs/releases/0.5.0-beta.1.md). Поддерживаемый путь установки — сборка из исходников. Публичные registry-образы пока не опубликованы. S3-исполнение и ротация SSH-ключей защищены серверными experimental-gates и выключены по умолчанию.
+**Current release: [0.5.0-beta.1](https://github.com/shmelevsergei/infradeck-public/releases/tag/v0.5.0-beta.1).** This is a source-build beta. English is the default for setup, sign-in, invitations and new workspaces. Russian remains selectable, and existing workspace language preferences are preserved.
 
-Самостоятельное open source приложение для реестра и наблюдения за IT-инфраструктурой. AGPL-3.0-only. Компания, timezone и профиль настраиваются. Облако автора не требуется. [SSH и установка Sentinel из карточки сервера](docs/managed-servers.md) доступны с первоначальным разрешением доступа владельцем сервера.
+## Features
 
-## Запуск Docker Compose
+- Projects, typed infrastructure resources, shared resources and dependency maps.
+- Costs, allocations, monthly budgets and project-scoped access.
+- CSV/XLSX import with preview; PDF/XLSX snapshot reports.
+- HTTP/TLS monitoring, Prometheus-compatible sources and SSH/Sentinel metrics.
+- Incident rules, maintenance windows, Alertmanager and email/Telegram/Discord adapters.
+- Workspace/project roles, invitations, read API tokens and audit history.
 
-Требуются Docker Engine + Compose и Node.js 24.18.0 для установочного скрипта.
+Ordinary SSH/Sentinel is available. Automatic S3 backup/restore execution and SSH key rotation are **experimental and disabled by default**. Explicit opt-in is intended for authorized disposable test targets. See [experimental settings](docs/operations.md#beta-experimental-operations) and [release scope](docs/releases/0.5.0-beta.1.md). External providers require configuration and individual verification. Published registry images are not included in this release.
 
-```powershell
-npm.cmd ci
-npm.cmd run install:local
+## Install with Docker Compose
+
+Requirements: Docker Engine with Docker Compose, Node.js 24 (validated with 24.18.0), and npm 12.0.1. Container builds were validated on Linux amd64.
+
+Clone this repository or extract the source archive into an empty directory:
+
+```sh
+git clone https://github.com/shmelevsergei/infradeck-public.git
+cd infradeck-public
+npm ci
+npm run install:local
 ```
 
-Скрипт создаёт случайные секреты в приватном `.env`, сохраняет существующую конфигурацию и запускает сборку Compose. Открыть http://localhost:3000/setup, ввести `BOOTSTRAP_TOKEN` из локального `.env`, создать workspace и владельца. Публичной регистрации и начального пароля нет. В Linux использовать `npm` вместо `npm.cmd` и ограничить права `.env` до 600; в Windows ограничить ACL владельцем.
+On Windows, use `npm.cmd` if PowerShell blocks the npm script.
 
-### Автоматическая Инициализация Администратора
+The installer generates random secrets in a private `.env`, preserves existing configuration, and builds/starts Docker Compose. Open http://localhost:3000/setup, enter the `BOOTSTRAP_TOKEN` from your local `.env`, and create the workspace and owner. There is no public registration or default password.
 
-Для установки без мастера сначала выполните `npm.cmd run install:local -- --prepare`, затем явно задайте в приватном `.env` обе переменные `INFRADECK_INIT_ADMIN_EMAIL` и `INFRADECK_INIT_ADMIN_PASSWORD`. Пароль: 12–128 символов, без пробелов в начале/конце; стандартного пароля нет. После этого выполните `npm.cmd run install:local`.
+Keep `.env` private: restrict it to its owner (mode 600 on Linux; owner-only ACL on Windows). PostgreSQL and Redis use persistent named volumes and do not publish ports. The web interface binds to loopback by default. For external access, configure an HTTPS reverse proxy and the matching `BETTER_AUTH_URL`.
 
-Необязательные настройки: `INFRADECK_INIT_ADMIN_NAME` (по умолчанию Administrator), `INFRADECK_INIT_WORKSPACE_NAME` (InfraDeck), `INFRADECK_INIT_TIMEZONE` (UTC), `INFRADECK_INIT_LOCALE` (ru или en, по умолчанию ru).
+### Optional unattended administrator setup
 
-После миграций, до старта web/worker, создаются один workspace и первый администратор с ролью **OWNER** и правом экспорта. Откройте http://localhost:3000 и войдите с заданными данными. `/setup` после этого закрыт. Без обеих переменных сохраняется обычный мастер настройки; при частично заданных credentials на новой БД запуск останавливается с ошибкой без создания аккаунта.
-
-Инициализация одноразовая: повторное развёртывание не меняет пароль, email и роли существующих пользователей. Непустая БД без маркера установки не принимается за новую: требуется восстановление, а не автоматический захват существующей установки. Пароль хешируется и не выводится в логи. INIT-переменные передаются только контейнеру `migrate`, не web/worker. После успешной настройки удалите обе INIT-переменные с credentials из `.env` и пересоздайте контейнер `migrate`, чтобы убрать их и из его окружения; не удаляйте остальные секреты.
-
-Ручной запуск:
-
-```powershell
-npm.cmd run install:local -- --prepare
-docker compose up -d --build
-docker compose ps
+```sh
+npm run install:local -- --prepare
 ```
 
-Web и worker запускаются после `prisma migrate deploy`. PostgreSQL 18.6 и Redis 7.2.11 хранят данные в named volumes и не публикуют порты. Web по умолчанию доступен только на localhost. Для доступа извне настройте HTTPS reverse proxy и `BETTER_AUTH_URL`; Compose не монтирует Docker socket.
+Set both `INFRADECK_INIT_ADMIN_EMAIL` and `INFRADECK_INIT_ADMIN_PASSWORD` in the private `.env`, then run `npm run install:local`. Use a 12?128 character password without surrounding whitespace.
 
-## Локальная разработка
+Optional settings: `INFRADECK_INIT_ADMIN_NAME` (Administrator), `INFRADECK_INIT_WORKSPACE_NAME` (InfraDeck), `INFRADECK_INIT_TIMEZONE` (UTC), and `INFRADECK_INIT_LOCALE` (en). Migrations finish before initialization and application startup. Initialization creates one OWNER with export permission. Repeating initialization does not reset existing accounts or passwords. Without the two credentials, the normal setup wizard remains available.
 
-```powershell
-npm.cmd ci
-npm.cmd run install:local -- --prepare --local
+After initialization, remove the two INIT credential variables and recreate the migration container to remove them from its environment. Preserve all other secrets.
+
+## Updates, backup and recovery
+
+Follow [operations](docs/operations.md) before updating. Back up the metadata database and preserve the corresponding `.env` / `ENCRYPTION_KEY`. Reports are stored in the database and included in metadata backups. Reverting a Docker image does not revert schema migrations.
+
+```sh
+npm run backup:metadata -- --verify-restore
+npm run update:local
+```
+
+The metadata backup command is independent of the experimental S3 executor. Recover a lost administrator password using the documented `admin:reset` procedure. Do not put credentials in issues or resource notes.
+
+## Local development
+
+```sh
+npm ci
+npm run install:local -- --prepare --local
 docker compose -f compose.yaml -f deploy/compose.local.yaml up -d postgres redis
-npm.cmd run db:generate
-npm.cmd run db:migrate
-npm.cmd exec playwright install chromium
-npm.cmd run dev
+npm run db:generate
+npm run db:migrate
+npm exec playwright install chromium
+npm run dev
 ```
 
-В других терминалах: `npm.cmd run worker` и `npm.cmd run runner` (SSH-задания). Compose запускает runner автоматически. Локальный PostgreSQL опубликован только на `127.0.0.1:15432`. `--local` корректирует URL локальной БД, но не меняет секреты. Production Compose использует внутренний порт 5432.
+Run `npm run worker` and `npm run runner` in separate terminals. Production Compose starts both automatically.
 
-## Проверки
+## Validation
 
-```powershell
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd run test
-npm.cmd run build
-npm.cmd run test:e2e
-npm.cmd run db:verify-migrations
-npm.cmd run test:phase-a
+```sh
+npm run typecheck
+npm run lint
+npm run build
+node --import tsx scripts/release-isolated-check.ts
 ```
 
-Тесты БД требуют применённых миграций. E2E требует работающие web, worker, Chromium и свободный localhost:17891. E2E создаёт только синтетические данные; используйте отдельную тестовую установку. Пароль тестового владельца случайный, хранится исключительно в игнорируемом `data/e2e-credentials.json`. Не запускать E2E на рабочей корпоративной БД.
+The isolated release driver creates dedicated PostgreSQL/Redis fixtures and checks migrations, metadata recovery, domain/database behavior and E2E workflows. It requires Docker and local Chromium. Never run standalone database/E2E tests against a working production database.
 
-Текущее состояние и результаты: [docs/implementation-status.md](docs/implementation-status.md). Архитектура: [docs/architecture.md](docs/architecture.md). Эксплуатация: [docs/operations.md](docs/operations.md). [English](README.en.md).
-
-`test:phase-a` создаёт отдельную случайно именованную БД и отдельную очередь, проверяет пустую установку, сохранение секретов установщика, тесты и E2E на порту 3001, затем удаляет только свою тестовую БД. Требуются работающие PostgreSQL/Redis, Chromium и предварительный `npm.cmd run build`. Текущие записи не удаляются. Миграции добавляют таблицы/поля и расширяют allowlist без удаления данных; используйте `npm.cmd run db:migrate` перед запуском обновлённого приложения.
-
-Приёмка: [docs/phase-a-acceptance.md](docs/phase-a-acceptance.md). Правила удаления: [docs/deletion.md](docs/deletion.md). Приглашения и реализованные scopes API: [docs/access.md](docs/access.md). Production setup пустой и не запускает E2E или demo-seed.
-
-C2: [реальные ограниченные S3-бэкапы и изолированный restore](docs/backups-s3.md).
-Настройка `/backups`, engine/ОС/лимиты зафиксированы; Manual результат и webhook
-по-прежнему не запускают бэкап. Внешняя приёмка B/C1/C2 остаётся отдельной.
-
-Фаза B: [проектные права, бюджеты, Prometheus, TLS, Alertmanager и каналы уведомлений](docs/phase-b.md). Пошаговая [инструкция пользователя](docs/user-guide.md). C1: [SSH/Sentinel и ротация](docs/managed-servers.md). Backup-webhook передаёт завершённый результат, но не запускает бэкап и не подтверждает восстановление. Отдельный C2 executor выполняет ограниченный профиль S3. Регрессионный `test:phase-a` также запускает проверки B/C1/C2 на отдельной базе; `test:phase-c` — focused domain/DB проверки. Продуктовые cloud-коннекторы требуют выбора конкретных продуктов/API.
-
-Установка без Node.js на хосте через опубликованные release-образы остаётся отдельной задачей подготовки публичного релиза. Текущий поддерживаемый путь использует npm и локальную сборку Docker Compose.
+For further information, see [architecture](docs/architecture.md), [user guide](docs/user-guide.md), [SSH/Sentinel](docs/managed-servers.md), [access control](docs/access.md) and [roadmap](docs/roadmap.md). Some detailed documentation is currently in Russian.
