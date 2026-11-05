@@ -1,0 +1,6 @@
+node_modules
+packages/db/generated
+apps/web/.next
+data
+package-lock.json
+PROJECT_BRIEF.md

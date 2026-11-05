@@ -1,0 +1,848 @@
+generator client {
+  provider = "prisma-client"
+  output = "./generated"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum Role {
+  OWNER
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+enum Lifecycle {
+  PLANNED
+  ACTIVE
+  STOPPED
+  MAINTENANCE
+  ARCHIVED
+}
+enum ResourceType {
+  SERVER
+  DATABASE
+  OBJECT_STORAGE
+  APPLICATION_SERVICE
+  EXTERNAL_SERVICE
+  NETWORK
+}
+enum Health {
+  OK
+  WARNING
+  CRITICAL
+  UNKNOWN
+}
+model User {
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  sessions Session[]
+  accounts Account[]
+  memberships Membership[]
+}
+model Session {
+  id String @id
+  token String @unique
+  expiresAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  @@index([userId])
+}
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime? @db.Timestamptz
+  refreshTokenExpiresAt DateTime? @db.Timestamptz
+  scope String?
+  password String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@index([userId])
+}
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@index([identifier])
+}
+model RateLimit {
+  id String @id @default(uuid())
+  key String @unique
+  count Int
+  lastRequest BigInt
+}
+model Installation {
+  id Int @id @default(1)
+  completedAt DateTime @default(now()) @db.Timestamptz
+}
+model Workspace {
+  id String @id @default(uuid())
+  name String
+  logoUrl String?
+  timezone String @default("UTC")
+  currency String @default("RUB")
+  locale String @default("en")
+  retentionDays Int @default(90)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  memberships Membership[]
+  projects Project[]
+  resources Resource[]
+}
+model Membership {
+  id String @id @default(uuid())
+  workspaceId String
+  userId String
+  role Role @default(VIEWER)
+  canExport Boolean @default(false)
+  projectRestricted Boolean @default(false)
+  projectAccess ProjectAccess[]
+  workspace Workspace @relation(fields:[workspaceId],references:[id])
+  user User @relation(fields:[userId],references:[id])
+  imports ImportBatch[]
+  reports ReportJob[]
+  @@unique([workspaceId,userId])
+}
+model Provider {
+  id String @id @default(uuid())
+  workspaceId String
+  name String
+  @@unique([workspaceId,name])
+}
+model Project {
+  id String @id @default(uuid())
+  workspaceId String
+  workspace Workspace @relation(fields:[workspaceId],references:[id])
+  name String
+  code String
+  description String @default("")
+  lifecycle Lifecycle @default(ACTIVE)
+  criticality String @default("NORMAL")
+  owner String @default("")
+  personalData String @default("UNKNOWN")
+  documentation String @default("")
+  version Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  resources ProjectResource[]
+  costAllocations CostAllocation[]
+  domains Domain[]
+  members ProjectAccess[]
+  budgets ProjectBudget[]
+  notificationChannels NotificationChannel[]
+  @@unique([workspaceId,id])
+  @@unique([workspaceId,code])
+}
+model ProjectAccess {
+  workspaceId String
+  projectId String
+  userId String
+  role String @default("VIEWER")
+  allowHostMetrics Boolean @default(false)
+  project Project @relation(fields:[workspaceId,projectId],references:[workspaceId,id],onDelete:Restrict)
+  membership Membership @relation(fields:[workspaceId,userId],references:[workspaceId,userId],onDelete:Restrict)
+  @@id([workspaceId,projectId,userId])
+  @@index([workspaceId,userId])
+}
+model ProjectBudget {
+  id String @id @default(uuid())
+  workspaceId String
+  projectId String
+  month String
+  currency String
+  amount Decimal @db.Decimal(18,2)
+  version Int @default(1)
+  project Project @relation(fields:[workspaceId,projectId],references:[workspaceId,id],onDelete:Restrict)
+  @@unique([workspaceId,projectId,month,currency])
+}
+model Resource {
+  id String @id @default(uuid())
+  workspaceId String
+  workspace Workspace @relation(fields:[workspaceId],references:[id])
+  name String
+  type ResourceType
+  lifecycle Lifecycle @default(PLANNED)
+  environment String @default("production")
+  provider String @default("")
+  externalId String?
+  owner String @default("")
+  criticality String @default("NORMAL")
+  personalData String @default("UNKNOWN")
+  notes String @default("")
+  declaredBackup String @default("UNKNOWN")
+  declaredMonitoring String @default("UNKNOWN")
+  checkedAt DateTime? @db.Timestamptz
+  version Int @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  server ServerDetails?
+  database DatabaseDetails?
+  storage StorageDetails?
+  service ServiceDetails?
+  network NetworkDetails?
+  projects ProjectResource[]
+  outgoing ResourceRelation[] @relation("outgoing")
+  incoming ResourceRelation[] @relation("incoming")
+  endpoints Endpoint[]
+  costs CostEntry[]
+  checks CheckDefinition[]
+  policies BackupPolicy[]
+  updates UpdateRecord[]
+  domains Domain[]
+  alerts Alert[]
+  maintenanceWindows MaintenanceWindow[]
+  metricBindings MetricBinding[]
+  tlsMonitors TlsMonitor[]
+  sshConnections SshConnection[]
+  @@unique([workspaceId,id])
+  @@unique([workspaceId,provider,externalId])
+  @@index([workspaceId,type,lifecycle,environment])
+}
+model TlsMonitor {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  hostname String
+  port Int @default(443)
+  warningDays Int @default(30)
+  criticalDays Int @default(7)
+  enabled Boolean @default(true)
+  nextRunAt DateTime @default(now()) @db.Timestamptz
+  observedAt DateTime? @db.Timestamptz
+  certificateExpiresAt DateTime? @db.Timestamptz
+  status String @default("UNKNOWN")
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id],onDelete:Restrict)
+  @@unique([workspaceId,resourceId,hostname,port])
+  @@index([enabled,nextRunAt])
+}
+model MetricSource {
+  id String @id @default(uuid())
+  workspaceId String
+  name String
+  url String
+  ciphertext String?
+  keyVersion Int?
+  enabled Boolean @default(true)
+  kind String @default("PROMETHEUS")
+  sshConnectionId String? @unique
+  sshConnection SshConnection? @relation(fields:[workspaceId,sshConnectionId],references:[workspaceId,id],onDelete:Restrict)
+  bindings MetricBinding[]
+  @@unique([workspaceId,id])
+}
+model SshConnection {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  hostname String
+  port Int @default(22)
+  username String
+  allowPrivate Boolean @default(false)
+  publicKey String
+  pendingPublicKey String?
+  retiredPublicKey String?
+  ciphertext String
+  keyVersion Int
+  observedFingerprint String?
+  fingerprint String?
+  enabled Boolean @default(true)
+  installed Boolean @default(false)
+  version Int @default(1)
+  status String @default("NEW")
+  facts Json @default("{}")
+  checkedAt DateTime? @db.Timestamptz
+  createdBy String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id],onDelete:Restrict)
+  sources MetricSource[]
+  jobs RemoteJob[]
+  @@unique([workspaceId,id])
+  @@unique([workspaceId,resourceId])
+}
+model RemoteJob {
+  id String @id @default(uuid())
+  workspaceId String
+  connectionId String
+  actorId String
+  operation String
+  connectionVersion Int
+  allowDockerInstall Boolean @default(false)
+  status String @default("QUEUED")
+  cancelRequested Boolean @default(false)
+  startedAt DateTime? @db.Timestamptz
+  error String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  connection SshConnection @relation(fields:[workspaceId,connectionId],references:[workspaceId,id],onDelete:Restrict)
+  @@index([status,createdAt])
+}
+model BackupStorage {
+  id String @id @default(uuid())
+  workspaceId String
+  projectId String
+  name String
+  config Json
+  ciphertext String
+  keyVersion Int
+  checkedAt DateTime? @db.Timestamptz
+  checkActorId String?
+  checkStartedAt DateTime? @db.Timestamptz
+  status String @default("UNTESTED")
+  @@unique([workspaceId,id])
+}
+model BackupExecutor {
+  id String @id @default(uuid())
+  workspaceId String
+  projectId String
+  policyId String
+  connectionId String
+  restoreConnectionId String?
+  storageId String
+  input Json
+  ciphertext String
+  keyVersion Int
+  createdBy String
+  enabled Boolean @default(false)
+  intervalHours Int @default(24)
+  nextRunAt DateTime @default(now()) @db.Timestamptz
+  @@unique([workspaceId,id])
+}
+model BackupTask {
+  id String @id @default(uuid())
+  workspaceId String
+  executorId String
+  actorId String
+  status String @default("QUEUED")
+  kind String @default("BACKUP")
+  sourceTaskId String?
+  cancelRequested Boolean @default(false)
+  attempt Int @default(0)
+  objectKey String?
+  sha256 String?
+  runId String?
+  error String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  startedAt DateTime? @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  retryAt DateTime @default(now()) @db.Timestamptz
+  @@index([status,retryAt])
+}
+model MetricBinding {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  sourceId String
+  instance String
+  job String
+  enabled Boolean @default(true)
+  nextRunAt DateTime @default(now()) @db.Timestamptz
+  collectedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  status String @default("UNKNOWN")
+  snapshot Json @default("[]")
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id],onDelete:Restrict)
+  source MetricSource @relation(fields:[workspaceId,sourceId],references:[workspaceId,id],onDelete:Restrict)
+  rules MetricRule[]
+  alertmanager AlertmanagerConnection[]
+  @@unique([workspaceId,id])
+  @@unique([workspaceId,sourceId,instance,job])
+  @@index([enabled,nextRunAt])
+}
+model NotificationChannel {
+  id String @id @default(uuid())
+  workspaceId String
+  projectId String?
+  name String
+  kind String
+  ciphertext String
+  keyVersion Int
+  enabled Boolean @default(true)
+  minSeverity String @default("WARNING")
+  eventTypes String[] @default(["METRICS", "HTTP", "BACKUP", "BUDGET", "TLS", "ALERTMANAGER"])
+  createdBy String
+  nextSendAt DateTime @default(now()) @db.Timestamptz
+  project Project? @relation(fields:[workspaceId,projectId],references:[workspaceId,id],onDelete:Restrict)
+  deliveries NotificationDelivery[]
+  @@unique([workspaceId,id])
+}
+model NotificationDelivery {
+  id String @id @default(uuid())
+  workspaceId String
+  channelId String
+  eventKey String
+  resourceId String?
+  message String
+  status String @default("QUEUED")
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now()) @db.Timestamptz
+  sentAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  error String?
+  channel NotificationChannel @relation(fields:[workspaceId,channelId],references:[workspaceId,id],onDelete:Restrict)
+  @@unique([channelId,eventKey])
+  @@index([status,nextAttemptAt])
+}
+model AlertmanagerConnection {
+  id String @id @default(uuid())
+  workspaceId String
+  bindingId String?
+  tokenHash String @unique
+  enabled Boolean @default(true)
+  expiresAt DateTime @db.Timestamptz
+  binding MetricBinding? @relation(fields:[workspaceId,bindingId],references:[workspaceId,id],onDelete:Restrict)
+  receipts AlertmanagerReceipt[]
+}
+model AlertmanagerReceipt {
+  id String @id @default(uuid())
+  connectionId String
+  fingerprint String
+  startsAt DateTime @db.Timestamptz
+  status String
+  connection AlertmanagerConnection @relation(fields:[connectionId],references:[id],onDelete:Restrict)
+  @@unique([connectionId,fingerprint])
+}
+model MetricRule {
+  id String @id @default(uuid())
+  workspaceId String
+  bindingId String
+  metric String
+  threshold Float
+  recoveryBelow Float
+  forSeconds Int @default(600)
+  recoverySeconds Int @default(300)
+  severity String @default("WARNING")
+  enabled Boolean @default(true)
+  silencedUntil DateTime? @db.Timestamptz
+  reminderSeconds Int @default(0)
+  state Json @default("{}")
+  binding MetricBinding @relation(fields:[workspaceId,bindingId],references:[workspaceId,id],onDelete:Restrict)
+  @@index([workspaceId,bindingId])
+}
+model ServerDetails {
+  resourceId String @id
+  resource Resource @relation(fields:[resourceId],references:[id])
+  publicIp String?
+  privateIp String?
+  os String?
+  osVersion String?
+  vcpu Int?
+  ramBytes BigInt?
+  diskBytes BigInt?
+  timezone String @default("UTC")
+}
+model DatabaseDetails {
+  resourceId String @id
+  resource Resource @relation(fields:[resourceId],references:[id])
+  engine String?
+  engineVersion String?
+  sizeBytes BigInt?
+}
+model StorageDetails {
+  resourceId String @id
+  resource Resource @relation(fields:[resourceId],references:[id])
+  bucket String?
+  region String?
+  capacityBytes BigInt?
+}
+model ServiceDetails {
+  resourceId String @id
+  resource Resource @relation(fields:[resourceId],references:[id])
+  runtime String?
+  serviceVersion String?
+}
+model NetworkDetails {
+  resourceId String @id
+  resource Resource @relation(fields:[resourceId],references:[id])
+  cidr String?
+}
+model ProjectResource {
+  workspaceId String
+  projectId String
+  resourceId String
+  project Project @relation(fields:[workspaceId,projectId],references:[workspaceId,id])
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  @@id([workspaceId,projectId,resourceId])
+}
+model ResourceRelation {
+  id String @id @default(uuid())
+  workspaceId String
+  fromId String
+  toId String
+  kind String
+  from Resource @relation("outgoing",fields:[workspaceId,fromId],references:[workspaceId,id])
+  to Resource @relation("incoming",fields:[workspaceId,toId],references:[workspaceId,id])
+  @@unique([workspaceId,fromId,toId,kind])
+}
+model Endpoint {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  name String
+  url String
+  kind String @default("HTTP")
+  owner String @default("")
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  @@unique([workspaceId,id])
+}
+model Domain {
+  id String @id @default(uuid())
+  workspaceId String
+  hostname String
+  purpose String @default("")
+  owner String @default("")
+  projectId String?
+  resourceId String?
+  project Project? @relation(fields:[workspaceId,projectId],references:[workspaceId,id])
+  resource Resource? @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  registrationExpiresAt DateTime? @db.Timestamptz
+  registrationSource String @default("Manual")
+  certificateExpiresAt DateTime? @db.Timestamptz
+  @@unique([workspaceId,hostname])
+}
+model CostEntry {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  monthlyAmount Decimal @db.Decimal(18,2)
+  currency String
+  planned Boolean @default(false)
+  validFrom DateTime @default(now()) @db.Timestamptz
+  validTo DateTime? @db.Timestamptz
+  allocations CostAllocation[]
+  @@unique([workspaceId,id])
+}
+model CostAllocation {
+  id String @id @default(uuid())
+  workspaceId String
+  costId String
+  projectId String
+  percent Decimal @db.Decimal(5,2)
+  cost CostEntry @relation(fields:[workspaceId,costId],references:[workspaceId,id])
+  project Project @relation(fields:[workspaceId,projectId],references:[workspaceId,id])
+  @@unique([workspaceId,costId,projectId])
+}
+model CheckDefinition {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  url String
+  secretId String?
+  secret EncryptedSecret? @relation(fields:[workspaceId,secretId],references:[workspaceId,id])
+  method String @default("HEAD")
+  expectedStatus Int @default(200)
+  timeoutMs Int @default(5000)
+  intervalSeconds Int @default(60)
+  failureThreshold Int @default(3)
+  recoveryThreshold Int @default(2)
+  failures Int @default(0)
+  successes Int @default(0)
+  enabled Boolean @default(true)
+  nextRunAt DateTime @default(now()) @db.Timestamptz
+  runs CheckRun[]
+  @@unique([workspaceId,id])
+  @@index([enabled,nextRunAt])
+}
+model CheckRun {
+  id String @id @default(uuid())
+  workspaceId String
+  checkId String
+  check CheckDefinition @relation(fields:[workspaceId,checkId],references:[workspaceId,id])
+  jobKey String @unique
+  status Health
+  statusCode Int?
+  latencyMs Int?
+  message String @default("")
+  observedAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  @@index([workspaceId,checkId,observedAt])
+}
+model ProbeTarget {
+  id String @id @default(uuid())
+  workspaceId String
+  hostname String
+  port Int
+  allowPrivate Boolean @default(false)
+  @@unique([workspaceId,hostname,port])
+}
+model WorkerHeartbeat {
+  id String @id
+  seenAt DateTime @db.Timestamptz
+}
+model BackupPolicy {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  name String
+  tool String @default("Manual")
+  schedule String @default("")
+  timezone String @default("UTC")
+  retentionDays Int @default(30)
+  destination String @default("")
+  freshnessHours Int @default(24)
+  freshnessAlerts Boolean @default(false)
+  rpoHours Int?
+  rtoHours Int?
+  runs BackupRun[]
+  restores RestoreVerification[]
+  webhooks BackupWebhookConnection[]
+  @@unique([workspaceId,id])
+}
+model BackupRun {
+  id String @id @default(uuid())
+  workspaceId String
+  policyId String
+  policy BackupPolicy @relation(fields:[workspaceId,policyId],references:[workspaceId,id])
+  startedAt DateTime @db.Timestamptz
+  endedAt DateTime? @db.Timestamptz
+  status String
+  sizeBytes BigInt?
+  source String @default("Manual")
+  message String @default("")
+}
+model BackupWebhookConnection {
+  id String @id @default(uuid())
+  workspaceId String
+  policyId String?
+  policy BackupPolicy? @relation(fields:[workspaceId,policyId],references:[workspaceId,id],onDelete:Restrict)
+  name String
+  ciphertext String
+  keyVersion Int
+  enabled Boolean @default(true)
+  expiresAt DateTime @db.Timestamptz
+  createdBy String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  lastReceivedAt DateTime? @db.Timestamptz
+  receipts BackupWebhookReceipt[]
+  @@index([workspaceId,policyId])
+}
+model BackupWebhookReceipt {
+  id String @id @default(uuid())
+  connectionId String
+  connection BackupWebhookConnection @relation(fields:[connectionId],references:[id],onDelete:Restrict)
+  externalRunId String
+  payloadHash String
+  runId String
+  receivedAt DateTime @default(now()) @db.Timestamptz
+  @@unique([connectionId,externalRunId])
+}
+model RestoreVerification {
+  id String @id @default(uuid())
+  workspaceId String
+  policyId String
+  policy BackupPolicy @relation(fields:[workspaceId,policyId],references:[workspaceId,id])
+  verifiedAt DateTime @db.Timestamptz
+  isolatedTarget String
+  status String
+  durationMinutes Int?
+  author String
+  notes String @default("")
+}
+model UpdateRecord {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  component String
+  currentVersion String
+  availableVersion String
+  source String @default("Manual")
+  observedAt DateTime @default(now()) @db.Timestamptz
+  plannedAt DateTime? @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+  owner String @default("")
+  priority String @default("NORMAL")
+  status String @default("PLANNED")
+  notes String @default("")
+  @@unique([workspaceId,id])
+}
+model Alert {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String?
+  resource Resource? @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  fingerprint String
+  title String
+  severity String @default("WARNING")
+  status String @default("OPEN")
+  source String
+  assignee String @default("")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  comments AlertComment[]
+  @@unique([workspaceId,fingerprint])
+  @@unique([workspaceId,id])
+}
+model AlertComment {
+  id String @id @default(uuid())
+  workspaceId String
+  alertId String
+  alert Alert @relation(fields:[workspaceId,alertId],references:[workspaceId,id])
+  author String
+  text String
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+model OperationalEvent {
+  id String @id @default(uuid())
+  workspaceId String
+  source String
+  title String
+  status String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([workspaceId,createdAt])
+}
+model AuditEntry {
+  id String @id @default(uuid())
+  workspaceId String
+  actorId String
+  action String
+  target String
+  diff Json?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([workspaceId,createdAt])
+}
+model DeletedObjectHistory {
+  id String @id @default(uuid())
+  workspaceId String
+  objectId String
+  objectType String
+  objectName String
+  actorId String
+  records Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([workspaceId,objectType,objectId])
+  @@index([workspaceId,createdAt])
+}
+model Invitation {
+  id String @id @default(uuid())
+  workspaceId String
+  email String
+  role Role
+  canExport Boolean @default(false)
+  projectRestricted Boolean @default(false)
+  tokenHash String @unique
+  createdBy String
+  expiresAt DateTime @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  acceptedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([workspaceId,createdAt])
+}
+model ApiToken {
+  id String @id @default(uuid())
+  workspaceId String
+  actorId String
+  name String
+  tokenHash String @unique
+  scopes String[]
+  expiresAt DateTime @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([workspaceId,createdAt])
+}
+model RoadmapTask {
+  id String @id @default(uuid())
+  workspaceId String
+  title String
+  kind String @default("INFRASTRUCTURE")
+  status String @default("PLANNED")
+  assignee String @default("")
+  startAt DateTime @db.Timestamptz
+  endAt DateTime @db.Timestamptz
+  actualEndAt DateTime? @db.Timestamptz
+  estimateHours Decimal? @db.Decimal(10,2)
+  recurring Boolean @default(false)
+  notes String @default("")
+  version Int @default(1)
+  dependencies TaskDependency[] @relation("task")
+  dependents TaskDependency[] @relation("dependency")
+  @@unique([workspaceId,id])
+}
+model RoadmapDirection {
+  id String @id @default(uuid())
+  workspaceId String
+  title String
+  notes String @default("")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([workspaceId,title])
+}
+model TaskDependency {
+  workspaceId String
+  taskId String
+  dependsOnId String
+  task RoadmapTask @relation("task",fields:[workspaceId,taskId],references:[workspaceId,id])
+  dependsOn RoadmapTask @relation("dependency",fields:[workspaceId,dependsOnId],references:[workspaceId,id])
+  @@id([workspaceId,taskId,dependsOnId])
+}
+model CapacityPlan {
+  id String @id @default(uuid())
+  workspaceId String
+  person String
+  month String
+  hours Decimal @db.Decimal(10,2)
+  @@unique([workspaceId,person,month])
+}
+model ImportBatch {
+  id String @id @default(uuid())
+  workspaceId String
+  actorId String
+  membership Membership @relation(fields:[workspaceId,actorId],references:[workspaceId,userId])
+  filename String
+  content Bytes
+  status String @default("QUEUED")
+  mapping Json @default("{}")
+  preview Json?
+  error String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  committedAt DateTime? @db.Timestamptz
+  @@index([status])
+}
+model ReportJob {
+  id String @id @default(uuid())
+  workspaceId String
+  actorId String
+  membership Membership @relation(fields:[workspaceId,actorId],references:[workspaceId,userId])
+  format String
+  status String @default("QUEUED")
+  snapshot Json
+  filters Json
+  artifact Bytes?
+  error String?
+  templateVersion String @default("1")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  generatedAt DateTime? @db.Timestamptz
+  @@index([status])
+}
+model MaintenanceWindow {
+  id String @id @default(uuid())
+  workspaceId String
+  resourceId String
+  resource Resource @relation(fields:[workspaceId,resourceId],references:[workspaceId,id])
+  startAt DateTime @db.Timestamptz
+  endAt DateTime @db.Timestamptz
+  notes String
+}
+model EncryptedSecret {
+  id String @id @default(uuid())
+  workspaceId String
+  ciphertext String
+  keyVersion Int
+  checks CheckDefinition[]
+  @@unique([workspaceId,id])
+}

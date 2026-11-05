@@ -1,0 +1,98 @@
+name: infradeck
+x-app-env: &app-env
+  DATABASE_URL: postgresql://infradeck:${POSTGRES_PASSWORD:?Run install script}@postgres:5432/infradeck
+  REDIS_URL: redis://redis:6379
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Run install script}
+  BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Run install script}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run install script}
+  SOURCE_URL: ${SOURCE_URL:-https://github.com/shmelevsergei/infradeck-public/tree/v0.5.0-beta.1}
+  INFRADECK_EXPERIMENTAL_BACKUPS: ${INFRADECK_EXPERIMENTAL_BACKUPS:-false}
+  INFRADECK_EXPERIMENTAL_SSH_ROTATION: ${INFRADECK_EXPERIMENTAL_SSH_ROTATION:-false}
+services:
+  postgres:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: infradeck
+      POSTGRES_DB: infradeck
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run install script}
+    volumes: ["postgres_data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infradeck -d infradeck"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  redis:
+    image: redis:7.2.11-bookworm
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    image: infradeck-migrate:0.5.0-beta.1
+    build: { context: ., dockerfile: deploy/Dockerfile, target: migrate }
+    environment:
+      <<: *app-env
+      INFRADECK_INIT_ADMIN_EMAIL: ${INFRADECK_INIT_ADMIN_EMAIL:-}
+      INFRADECK_INIT_ADMIN_PASSWORD: ${INFRADECK_INIT_ADMIN_PASSWORD:-}
+      INFRADECK_INIT_ADMIN_NAME: ${INFRADECK_INIT_ADMIN_NAME:-Administrator}
+      INFRADECK_INIT_WORKSPACE_NAME: ${INFRADECK_INIT_WORKSPACE_NAME:-InfraDeck}
+      INFRADECK_INIT_TIMEZONE: ${INFRADECK_INIT_TIMEZONE:-UTC}
+      INFRADECK_INIT_LOCALE: ${INFRADECK_INIT_LOCALE:-en}
+    depends_on:
+      postgres: { condition: service_healthy }
+  web:
+    image: infradeck-web:0.5.0-beta.1
+    build: { context: ., dockerfile: deploy/Dockerfile, target: web }
+    environment: *app-env
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  worker:
+    image: infradeck-worker:0.5.0-beta.1
+    build: { context: ., dockerfile: deploy/Dockerfile, target: worker }
+    environment: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "./node_modules/.bin/tsx", "scripts/worker-health.ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+  runner:
+    image: infradeck-worker:0.5.0-beta.1
+    command: ["node", "--import", "tsx", "apps/runner/src/index.ts"]
+    environment:
+      <<: *app-env
+      INFRADECK_HEARTBEAT_ID: runner
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "./node_modules/.bin/tsx", "scripts/worker-health.ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: InfraDeck API and Integration Contract
+  version: 0.1.0
+  description: Phase A read operations use scoped Bearer tokens. Phase B backup results use a separate connection-bound HMAC key, never an admin or API Bearer token.
+components:
+  securitySchemes:
+    scopedToken: {type: http, scheme: bearer}
+paths:
+  /api/v1/projects:
+    get:
+      description: Implemented. Requires projects:read; returns up to 1000 workspace projects.
+      security: [{scopedToken: []}]
+      responses:
+        '200': {description: Workspace-scoped project registry with data and limit fields}
+        '403': {description: Invalid, revoked, expired or insufficient-scope token}
+        '429': {description: Token rate limit exceeded}
+  /api/v1/resources:
+    get:
+      description: Implemented. Requires resources:read; returns up to 1000 workspace resource registry rows without encrypted credentials.
+      security: [{scopedToken: []}]
+      responses:
+        '200': {description: Workspace-scoped resource registry with data and limit fields}
+        '403': {description: Invalid, revoked, expired or insufficient-scope token}
+        '429': {description: Token rate limit exceeded}
+  /api/v1/reports:
+    get:
+      description: Implemented. Requires reports:read; returns up to 1000 job metadata rows, not snapshots or artifact bytes.
+      security: [{scopedToken: []}]
+      responses:
+        '200': {description: Workspace-scoped report job metadata with data and limit fields}
+        '403': {description: Invalid, revoked, expired or insufficient-scope token}
+        '429': {description: Token rate limit exceeded}
+  /api/integrations/{connectionId}/backup-runs:
+    post:
+      description: >-
+        Implemented Phase B endpoint for completed results only, not execution.
+        Maximum 16 KiB JSON. Sign exact UTF-8 request bytes using HMAC-SHA256(key, timestamp + '.' + body).
+        Signature is v1= followed by lowercase hex; timestamp is Unix seconds within 300 seconds of server time.
+        Connection binds exactly one workspace and backup policy/resource; it must be enabled and unexpired.
+        Identical byte-for-byte replay of externalRunId returns the original ID; changed bytes conflict.
+        Keys are shown once on creation/rotation and stored AES-256-GCM encrypted. HTTPS is required outside local development.
+        Restore verification is never inferred from SUCCESS. Accepted results are committed transactionally, not queued for execution.
+      parameters:
+        - {name: connectionId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: X-InfraDeck-Timestamp, in: header, required: true, schema: {type: string, pattern: '^[0-9]{10}$'}}
+        - {name: X-InfraDeck-Signature, in: header, required: true, schema: {type: string, pattern: '^v1=[a-f0-9]{64}$'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [externalRunId, resourceId, status, startedAt, endedAt]
+              properties:
+                externalRunId: {type: string, minLength: 1, maxLength: 200}
+                resourceId: {type: string, format: uuid}
+                status: {enum: [SUCCESS, FAILED, UNKNOWN]}
+                startedAt: {type: string, format: date-time}
+                endedAt: {type: string, format: date-time, description: Not before startedAt or more than five minutes in the future}
+                sizeBytes: {type: string, pattern: '^(0|[1-9][0-9]{0,18})$', description: Optional unsigned decimal within signed PostgreSQL BIGINT range}
+      responses:
+        '202': {description: Result persisted; JSON id and duplicate=false}
+        '200': {description: Identical retry; original id and duplicate=true, no duplicate result/audit/event}
+        '401': {description: Invalid HMAC or timestamp}
+        '408': {description: Body upload exceeded ten seconds}
+        '409': {description: External run ID reused with different request bytes}
+        '413': {description: Body exceeds 16 KiB}
+        '415': {description: application/json required}
+        '422': {description: Invalid fields, dates, size or resource binding}
+        '429': {description: Connection limit of 120 authenticated accepted requests per minute exceeded}
+        '503': {description: Temporary database or encryption service failure; retry unchanged body with a fresh timestamp/signature}

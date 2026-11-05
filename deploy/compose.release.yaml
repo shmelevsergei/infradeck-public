@@ -1,0 +1,20 @@
+services:
+  migrate:
+    image: ${INFRADECK_MIGRATE_IMAGE:?Set published migrate image@sha256:digest}
+    build: !reset null
+    environment:
+      SOURCE_URL: ${SOURCE_URL:?Set public corresponding source for this revision}
+  web:
+    image: ${INFRADECK_WEB_IMAGE:?Set published web image@sha256:digest}
+    build: !reset null
+    environment:
+      SOURCE_URL: ${SOURCE_URL:?Set public corresponding source for this revision}
+  worker:
+    image: ${INFRADECK_WORKER_IMAGE:?Set published worker image@sha256:digest}
+    build: !reset null
+    environment:
+      SOURCE_URL: ${SOURCE_URL:?Set public corresponding source for this revision}
+  runner:
+    image: ${INFRADECK_WORKER_IMAGE:?Set published worker image@sha256:digest}
+    environment:
+      SOURCE_URL: ${SOURCE_URL:?Set public corresponding source for this revision}

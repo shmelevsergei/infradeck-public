@@ -1,0 +1,13 @@
+# Data model
+
+See `packages/db/schema.prisma` and the SQL migrations for the authoritative schema. UUID identifiers, UTC timestamptz, typed server/database/storage/service/network details, Decimal costs, BigInt byte capacities and a separate lifecycle/health model are used. Typed detail rows do not turn S3 into a server.
+
+ProjectResource associates projects and resources without duplicating resource costs. ResourceRelation has direction and validated type rules. CostEntry has effective dates, currency and a planned flag; CostAllocation percentages are serialized with a per-cost advisory lock and cannot total more than 100%. Currency totals remain separate; monthly amount times twelve is a forecast at unchanged prices. Missing prices are visible as a count.
+
+BackupPolicy defines expected freshness, schedule/timezone and declared RPO/RTO. BackupRun and RestoreVerification are separate: manually entered results keep source=Manual, while the Phase B receiver records source=Webhook plus the configured connection name. A successful backup never creates a restore verification. UpdateRecord tracks observed/current/available versions and completion notes without executing updates.
+
+BackupWebhookConnection binds a workspace to one policy via a composite FK, with AES-GCM ciphertext/keyVersion, expiry, enable state, creator and last-received timestamp. No signing credential is selected into UI/export/history queries. BackupWebhookReceipt stores connectionId, externalRunId, original-body SHA-256, runId and receipt time; connection/externalRunId is unique. runId deliberately has no mandatory FK to the live BackupRun so deletion-history transfer cannot erase replay protection. Enabled connections block policy/resource deletion; disabled connections survive with policyId=null. Receipt creation and result/audit/event writes are transactional and serialized per connection. The receiver has no EXECUTION capability.
+
+CheckDefinition defines the schedule and failure/recovery thresholds. CheckRun is an observation with expiry and unique job key. Alerts deduplicate per workspace/fingerprint; ACKNOWLEDGED does not mean recovery. OperationalEvent records observations/jobs; AuditEntry records user configuration and downloads. Audit is not cryptographically immutable.
+
+ImportBatch stores private input, mapping, preview and commit state. Preview does not write the registry. Commit is transactional and locked per batch. Resource matches use provider/external ID; unresolved names cannot silently update a record. ReportJob stores the immutable source snapshot and artifact bytes. Neither table is public.
