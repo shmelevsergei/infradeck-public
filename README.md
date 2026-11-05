@@ -1,6 +1,6 @@
 # InfraDeck
 
-[English](README.md) ? [???????](README.ru.md) ? [Documentation](docs/README.md) ? [License](LICENSE) ? [Contributing](CONTRIBUTING.md) ? [Security](SECURITY.md)
+[English](README.md) | [Русский](README.ru.md) | [Documentation](docs/README.md) | [License](LICENSE) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
 
 Self-hosted infrastructure inventory, project costs, reports and monitoring. Your servers, your data. Licensed under AGPL-3.0-only; no vendor cloud is required.
 
@@ -42,7 +42,7 @@ Keep `.env` private: restrict it to its owner (mode 600 on Linux; owner-only ACL
 npm run install:local -- --prepare
 ```
 
-Set both `INFRADECK_INIT_ADMIN_EMAIL` and `INFRADECK_INIT_ADMIN_PASSWORD` in the private `.env`, then run `npm run install:local`. Use a 12?128 character password without surrounding whitespace.
+Set both `INFRADECK_INIT_ADMIN_EMAIL` and `INFRADECK_INIT_ADMIN_PASSWORD` in the private `.env`, then run `npm run install:local`. Use a 12-128 character password without surrounding whitespace.
 
 Optional settings: `INFRADECK_INIT_ADMIN_NAME` (Administrator), `INFRADECK_INIT_WORKSPACE_NAME` (InfraDeck), `INFRADECK_INIT_TIMEZONE` (UTC), and `INFRADECK_INIT_LOCALE` (en). Migrations finish before initialization and application startup. Initialization creates one OWNER with export permission. Repeating initialization does not reset existing accounts or passwords. Without the two credentials, the normal setup wizard remains available.
 
