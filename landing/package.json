@@ -1,0 +1,16 @@
+{
+  "name": "infradeck-landing",
+  "version": "0.5.0-beta.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check app.js && node --check server.mjs && node --check leads.mjs && node --check page.mjs && node --check build.mjs && node --check release-config.mjs && node --check messages.mjs",
+    "test": "node --test leads.test.mjs page.test.mjs",
+    "build": "node build.mjs"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

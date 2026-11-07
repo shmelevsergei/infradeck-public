@@ -1,3 +1,4 @@
+import { BrandLogo } from "../../components/brand-logo";
 import { Form, Field } from "../../components/forms";
 import Link from "next/link";
 import { LocaleProvider } from "../../components/locale";
@@ -13,6 +14,7 @@ export default async function Invite({
   return (
     <LocaleProvider locale={locale}>
       <main className="auth-page">
+        <div className="auth-brand"><BrandLogo /></div>
         <section className="auth-panel">
           <h1>{locale === "en" ? "Invitation" : "Приглашение"}</h1>
           <Form action={acceptInvitationAction} submit={t("Принять", "Accept")}>

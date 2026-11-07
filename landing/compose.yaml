@@ -1,0 +1,26 @@
+name: infradeck-landing
+services:
+  landing:
+    build: .
+    ports:
+      - "${LANDING_BIND:-127.0.0.1}:${LANDING_PORT:-4173}:4173"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4173"
+      LANDING_ORIGIN: ${LANDING_ORIGIN:-http://localhost:4173}
+      LANDING_DEMO_URL: ${LANDING_DEMO_URL:-http://localhost:3003}
+      LANDING_DEMO_EMAIL: ${LANDING_DEMO_EMAIL:-}
+      LANDING_DEMO_PASSWORD: ${LANDING_DEMO_PASSWORD:-}
+      LANDING_REPOSITORY_URL: ${LANDING_REPOSITORY_URL:-https://github.com/shmelevsergei/infradeck-public}
+      LANDING_RELEASE_URL: ${LANDING_RELEASE_URL:-https://github.com/shmelevsergei/infradeck-public/releases}
+      LANDING_DOCS_URL: ${LANDING_DOCS_URL:-https://github.com/shmelevsergei/infradeck-public/blob/main/README.md}
+      LANDING_LICENSE_URL: ${LANDING_LICENSE_URL:-https://github.com/shmelevsergei/infradeck-public/blob/main/LICENSE}
+      LANDING_ENABLE_LEADS: ${LANDING_ENABLE_LEADS:-true}
+      LANDING_PRIVACY_URL: ${LANDING_PRIVACY_URL:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]

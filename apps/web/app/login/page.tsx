@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandIcon } from "../../components/brand-icon";
+import { BrandLogo } from "../../components/brand-logo";
 import { Form, Field } from "../../components/forms";
 import { loginAction } from "../../lib/actions";
 import { LocaleProvider } from "../../components/locale";
@@ -15,8 +15,7 @@ export default async function Login({
     <LocaleProvider locale={locale}>
       <div className="auth-page">
         <div className="auth-brand">
-          <BrandIcon />
-          InfraDeck
+          <BrandLogo />
         </div>
         <section className="auth-panel">
           <h1>{t("Вход", "Sign in")}</h1>

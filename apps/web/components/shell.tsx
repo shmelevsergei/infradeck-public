@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { BrandIcon } from "./brand-icon";
+import { BrandLogo } from "./brand-logo";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -116,12 +116,7 @@ export function Shell({
       )}
       <aside className={"sidebar " + (open ? "is-open" : "")}>
         <Link href="/dashboard" className="brand">
-          <span className="brand-icon">
-            <BrandIcon size={32} />
-          </span>
-          <span>
-            InfraDeck<small>INFRASTRUCTURE CONTROL</small>
-          </span>
+          <BrandLogo />
         </Link>
         <button
           className="mobile-close"
