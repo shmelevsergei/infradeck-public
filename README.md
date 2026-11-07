@@ -1,10 +1,38 @@
-# InfraDeck
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.svg">
+    <img src="docs/images/logo-light.svg" alt="InfraDeck — Infrastructure Control" width="360">
+  </picture>
+</p>
 
-**Demo branch.** Deploy with synthetic data using `sh demo-install.sh`, or `sh demo-install.sh --domain your-domain` for HTTPS. [Deployment and login instructions](docs/demo.md).
+<p align="center">
+  <strong>A self-hosted web panel for your IT infrastructure</strong> — keep servers, databases and services in one inventory, track dependencies, costs and availability. See your projects and resources in one place, on your own server, with no mandatory vendor cloud.
+</p>
 
-Run your infrastructure from one place: keep track of servers, databases, dependencies, costs and availability. Deploy on your own server, add your projects and see what runs where, who owns it and what it costs.
+<p align="center">
+  <a href="README.md">English</a> · <a href="README.ru.md">Русский</a>
+</p>
 
-[English](README.md) · [Русский](README.ru.md) · [Documentation](docs/README.md)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL_v3-blue" alt="License: AGPL v3"></a>
+  <img src="https://img.shields.io/badge/app-Next.js-000000?logo=nextdotjs&amp;logoColor=white" alt="App: Next.js">
+  <img src="https://img.shields.io/badge/language-TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="Language: TypeScript">
+  <img src="https://img.shields.io/badge/database-PostgreSQL-4169E1?logo=postgresql&amp;logoColor=white" alt="Database: PostgreSQL">
+  <img src="https://img.shields.io/badge/deploy-Docker-2496ED?logo=docker&amp;logoColor=white" alt="Deploy: Docker">
+</p>
+
+<p align="center">
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="https://github.com/shmelevsergei/infradeck-public/releases">Releases</a> ·
+  <a href="docs/README.md">Documentation</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="SECURITY.md">Security</a>
+</p>
+
+---
+
+**Demo branch.** Deploy with synthetic data: `sh demo-install.sh`. [Deployment and login instructions](docs/demo.md).
 
 ## Why InfraDeck
 
@@ -15,10 +43,6 @@ Run your infrastructure from one place: keep track of servers, databases, depend
 | Track spending                        | Cost allocations and monthly budgets       |
 | Catch outages                         | HTTP/TLS checks, metrics and notifications |
 | Share the current picture             | CSV/XLSX import and PDF/XLSX reports       |
-
-[English](README.md) | [Русский](README.ru.md) | [Documentation](docs/README.md) | [License](LICENSE) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
-
-Self-hosted infrastructure inventory, project costs, reports and monitoring. Your servers, your data. Licensed under AGPL-3.0-only; no vendor cloud is required.
 
 **Current release: [0.5.0-beta.1](https://github.com/shmelevsergei/infradeck-public/releases/tag/v0.5.0-beta.1).** This is a source-build beta. English is the default for setup, sign-in, invitations and new workspaces. Russian remains selectable, and existing workspace language preferences are preserved.
 

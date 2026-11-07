@@ -1,14 +1,42 @@
-# InfraDeck
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.svg">
+    <img src="docs/images/logo-light.svg" alt="InfraDeck — Infrastructure Control" width="360">
+  </picture>
+</p>
 
-**Ветка демо.** Для развёртывания с моковыми данными используйте `sh demo-install.sh`, для HTTPS — `sh demo-install.sh --domain ваш-домен`. [Инструкция и данные входа](docs/demo.md).
+<p align="center">
+  <strong>Собственная веб-панель для управления IT-инфраструктурой</strong> — храните серверы, базы данных и сервисы в одном реестре, отслеживайте зависимости, расходы и доступность. Общая картина проектов и ресурсов на вашем сервере, без обязательного облака автора.
+</p>
 
-[English](README.md) · [Документация](docs/README.md) · [Лицензия](LICENSE) · [Участие](CONTRIBUTING.md) · [Безопасность](SECURITY.md)
+<p align="center">
+  <a href="README.md">English</a> · <a href="README.ru.md">Русский</a>
+</p>
 
-Панель для вашей IT-инфраструктуры: серверы, базы данных, зависимости, расходы и доступность в одном месте. Разверните на своём сервере и получите общую картину: что где работает, кто отвечает за ресурс и сколько он стоит. Облако автора не требуется. Лицензия AGPL-3.0-only.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL_v3-blue" alt="License: AGPL v3"></a>
+  <img src="https://img.shields.io/badge/app-Next.js-000000?logo=nextdotjs&amp;logoColor=white" alt="App: Next.js">
+  <img src="https://img.shields.io/badge/language-TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="Language: TypeScript">
+  <img src="https://img.shields.io/badge/database-PostgreSQL-4169E1?logo=postgresql&amp;logoColor=white" alt="Database: PostgreSQL">
+  <img src="https://img.shields.io/badge/deploy-Docker-2496ED?logo=docker&amp;logoColor=white" alt="Deploy: Docker">
+</p>
+
+<p align="center">
+  <a href="CHANGELOG.md">Список изменений</a> ·
+  <a href="https://github.com/shmelevsergei/infradeck-public/releases">Релизы</a> ·
+  <a href="docs/README.md">Документация</a> ·
+  <a href="CONTRIBUTING.md">Участие</a> ·
+  <a href="SECURITY.md">Безопасность</a>
+</p>
+
+---
+
+**Ветка демо.** Развёртывание с моками: `sh demo-install.sh`. [Инструкция и данные входа](docs/demo.md).
 
 **Язык приложения по умолчанию — English (en).** Русский можно выбрать при настройке и в рабочем пространстве. Существующие языковые настройки сохраняются.
 
-**0.5.0-beta.1:** бета со сборкой из исходников. Публичные образы приложения пока не опубликованы. Обычный SSH/Sentinel доступен; автоматические S3-бэкапы, восстановление и ротация SSH-ключей экспериментальны и выключены по умолчанию. [Область релиза](docs/releases/0.5.0-beta.1.md) · [Экспериментальные операции](docs/operations.md#beta-experimental-operations).
+**0.5.0-beta.1:** бета со сборкой из исходников. Публичные образы приложения пока не опубликованы. Обычный SSH/Sentinel доступен; S3-исполнение и ротация SSH-ключей экспериментальны и выключены по умолчанию. [Область релиза](docs/releases/0.5.0-beta.1.md).
 
 ## Зачем InfraDeck
 
