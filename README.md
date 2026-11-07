@@ -1,5 +1,19 @@
 # InfraDeck
 
+Run your infrastructure from one place: keep track of servers, databases, dependencies, costs and availability. Deploy on your own server, add your projects and see what runs where, who owns it and what it costs.
+
+[English](README.md) · [Русский](README.ru.md) · [Documentation](docs/README.md)
+
+## Why InfraDeck
+
+| Your task                             | What you get                               |
+| ------------------------------------- | ------------------------------------------ |
+| Find the owner of a server or service | A shared project and resource inventory    |
+| Understand dependencies               | An infrastructure relationship map         |
+| Track spending                        | Cost allocations and monthly budgets       |
+| Catch outages                         | HTTP/TLS checks, metrics and notifications |
+| Share the current picture             | CSV/XLSX import and PDF/XLSX reports       |
+
 [English](README.md) | [Русский](README.ru.md) | [Documentation](docs/README.md) | [License](LICENSE) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
 
 Self-hosted infrastructure inventory, project costs, reports and monitoring. Your servers, your data. Licensed under AGPL-3.0-only; no vendor cloud is required.
@@ -17,7 +31,45 @@ Self-hosted infrastructure inventory, project costs, reports and monitoring. You
 
 Ordinary SSH/Sentinel is available. Automatic S3 backup/restore execution and SSH key rotation are **experimental and disabled by default**. Explicit opt-in is intended for authorized disposable test targets. See [experimental settings](docs/operations.md#beta-experimental-operations) and [release scope](docs/releases/0.5.0-beta.1.md). External providers require configuration and individual verification. Published registry images are not included in this release.
 
-## Install with Docker Compose
+## Screenshots
+
+Synthetic demonstration data; English interface.
+
+![Infrastructure overview](docs/screenshots/dashboard.png)
+
+| Infrastructure                                         | Dependency map                             |
+| ------------------------------------------------------ | ------------------------------------------ |
+| ![Infrastructure](docs/screenshots/infrastructure.png) | ![Topology](docs/screenshots/topology.png) |
+
+[Projects](docs/screenshots/projects.png) · [Costs](docs/screenshots/costs.png) · [Monitoring](docs/screenshots/monitoring.png) · [Domains](docs/screenshots/domains.png) · [Mobile](docs/screenshots/dashboard-mobile.png)
+
+## Quick start
+
+On a Linux server, install Git and Docker Engine with Compose v2. No host Node.js or npm is required: configuration and source builds run in containers. Prebuilt application images are not published for this beta.
+
+```sh
+git clone https://github.com/shmelevsergei/infradeck-public.git
+cd infradeck-public
+sh install.sh
+```
+
+Open http://localhost:3000/setup on the host, enter BOOTSTRAP_TOKEN from private .env and create your owner account. Secrets are generated automatically and preserved on subsequent runs. For a remote host, use HTTPS below or an SSH tunnel: ssh -L 3000:localhost:3000 user@server.
+
+### HTTPS without buying a domain
+
+Replace dots in your server's public IPv4 with dashes: 203.0.113.10 → 203-0-113-10.sslip.io. This is an example; substitute your actual IP. [sslip.io](https://sslip.io/) resolves the embedded IP without domain registration.
+
+```sh
+sh install.sh --domain 203-0-113-10.sslip.io
+```
+
+Open https://203-0-113-10.sslip.io/setup with your IP. Bundled Caddy obtains and renews certificates and redirects HTTP to HTTPS. Allow inbound TCP 80/443 in the host and provider firewalls, keep these ports free, and allow outbound DNS and certificate authority access. Issuance depends on domain validation and CA rate limits.
+
+For your own domain, point an A record for deck.example.com to the public IPv4, wait for DNS propagation, then run sh install.sh --domain deck.example.com. Add AAAA only when IPv6 reaches this server correctly.
+
+The installer saves INFRADECK_DOMAIN, BETTER_AUTH_URL and COMPOSE_FILE in .env, so subsequent docker compose up -d --build commands also start Caddy. Certificates persist in a dedicated volume. No Docker socket is mounted. If you already run a reverse proxy, use it and set the matching BETTER_AUTH_URL instead. See [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https).
+
+## Alternative: install with host Node.js
 
 Requirements: Docker Engine with Docker Compose, Node.js 24 (validated with 24.18.0), and npm 12.0.1. Container builds were validated on Linux amd64.
 
