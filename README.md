@@ -1,5 +1,7 @@
 # InfraDeck
 
+**Demo branch.** Deploy with synthetic data using `sh demo-install.sh`, or `sh demo-install.sh --domain your-domain` for HTTPS. [Deployment and login instructions](docs/demo.md).
+
 Run your infrastructure from one place: keep track of servers, databases, dependencies, costs and availability. Deploy on your own server, add your projects and see what runs where, who owns it and what it costs.
 
 [English](README.md) · [Русский](README.ru.md) · [Documentation](docs/README.md)

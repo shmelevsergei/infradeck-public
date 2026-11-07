@@ -1,0 +1,11 @@
+name: infradeck-demo
+services:
+  migrate:
+    command:
+      [
+        "sh",
+        "-c",
+        "node --import tsx scripts/migrate-and-initialize.ts && node --import tsx scripts/demo-seed.ts",
+      ]
+    environment:
+      INFRADECK_DEMO: "true"
