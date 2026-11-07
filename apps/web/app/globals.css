@@ -187,18 +187,22 @@ dd {
 :root {
   color-scheme: dark;
   --sidebar: #10151d;
-  --sidebar-active: #1b2f25;
+  --sidebar-active: #172b4d;
   --status-panel: #0d1713;
   --background: #0c1017;
   --surface: #121821;
   --surface-raised: #19232b;
   --border: #26303b;
-  --text: #cde8d7;
+  --text: #e2e8f0;
   --secondary: #9da8b6;
-  --muted: #8fa497;
-  --accent: #a1efbe;
-  --accent-text: #10221a;
-  --success: #a1efbe;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent-soft: #172b4d;
+  --cyan: #06b6d4;
+  --accent-text: #ffffff;
+  --success: #10b981;
   --success-soft: #172d23;
   --warning: #edc178;
   --warning-soft: #30291a;
@@ -258,7 +262,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
-  outline: 2px solid #a1efbe26;
+  outline: 2px solid #60a5fa40;
 }
 textarea {
   resize: vertical;
@@ -475,7 +479,7 @@ p {
   height: 34px;
   width: 34px;
   flex: 0 0 34px;
-  background: var(--success-soft);
+  background: var(--accent-soft);
   color: var(--accent);
   border-radius: 50%;
   display: grid;
@@ -514,11 +518,11 @@ main {
   text-align: center;
 }
 .primary {
-  background: var(--accent);
+  background: var(--primary);
   color: var(--accent-text);
 }
 .primary:hover {
-  background: #c0ffd7;
+  background: var(--primary-hover);
 }
 .outline {
   border-color: var(--border);
@@ -601,7 +605,7 @@ main {
   border-radius: 8px;
 }
 .blue {
-  background: var(--success-soft);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 .green {
@@ -715,7 +719,7 @@ main {
   width: 34px;
   height: 34px;
   border-radius: 7px;
-  background: var(--success-soft);
+  background: var(--accent-soft);
   color: var(--accent);
   display: grid;
   place-items: center;
@@ -1393,7 +1397,7 @@ tbody tr:hover {
 }
 
 ::selection {
-  background: var(--accent);
+  background: var(--primary);
   color: var(--accent-text);
 }
 input::placeholder,
@@ -1421,3 +1425,26 @@ input[type="radio"] {
   --xy-minimap-background-color: var(--surface);
   --xy-minimap-mask-background-color: #0c1017b3;
 }
+
+/* Official brandkit artwork; preserve the application's existing palette. */
+.brand-logo {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  line-height: 0;
+}
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.brand-logo .brand-logo-light { display: none; }
+[data-theme="light"] .brand-logo .brand-logo-dark { display: none; }
+[data-theme="light"] .brand-logo .brand-logo-light { display: block; }
+.auth-brand { width: min(280px, 100%); }
+.auth-brand .brand-logo { max-width: none; }
+
+/* Brand primary actions; links retain a lighter blue for dark-surface contrast. */
+.button.primary:hover:not(:disabled){background:var(--primary-hover)}
+.button.outline:hover:not(:disabled),.button.ghost:hover:not(:disabled){background:var(--accent-soft)}

@@ -1,6 +1,6 @@
 import { db } from "@infradeck/db";
 import { redirect } from "next/navigation";
-import { BrandIcon } from "../../components/brand-icon";
+import { BrandLogo } from "../../components/brand-logo";
 import { Form, Field } from "../../components/forms";
 import { setupAction } from "../../lib/actions";
 import { LocaleProvider } from "../../components/locale";
@@ -18,8 +18,7 @@ export default async function Setup({
     <LocaleProvider locale={locale}>
       <div className="auth-page">
         <div className="auth-brand">
-          <BrandIcon />
-          InfraDeck
+          <BrandLogo />
         </div>
         <section className="auth-panel">
           <h1>{t("Первоначальная настройка", "Setup")}</h1>
